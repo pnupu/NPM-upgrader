@@ -1,0 +1,25 @@
+{
+  "name": "junction-agents-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r --filter ./packages/* --filter ./apps/* run build",
+    "clean": "pnpm -r --filter ./packages/* --filter ./apps/* run clean",
+    "lint": "eslint \"{apps,packages}/**/*.{ts,tsx}\"",
+    "lint:fix": "eslint \"{apps,packages}/**/*.{ts,tsx}\" --fix",
+    "cli:build": "pnpm --filter @junction-agents/cli run build",
+    "cli": "node apps/cli/dist/index.js"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^9.11.1",
+    "eslint-config-prettier": "^9.1.0",
+    "typescript": "^5.6.3"
+  },
+  "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
+}

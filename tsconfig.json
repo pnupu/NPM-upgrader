@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/diagnostics" },
+    { "path": "packages/rules" },
+    { "path": "packages/core" },
+    { "path": "packages/tools-ts" },
+    { "path": "apps/cli" }
+  ]
+}
+
+

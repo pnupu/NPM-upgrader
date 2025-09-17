@@ -4,9 +4,12 @@ node_modules/
 # Build outputs
 dist/
 build/
+*.map
 
 # TypeScript
 *.tsbuildinfo
+**/src/*.js
+**/src/*.d.ts
 
 # Vite cache
 .vite/
@@ -37,3 +40,5 @@ pnpm-debug.log*
 
 
 /docs
+
+.cache/
