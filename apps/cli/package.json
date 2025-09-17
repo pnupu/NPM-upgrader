@@ -1,0 +1,28 @@
+{
+  "name": "@junction-agents/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "router-fix": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -w --preserveWatchOutput",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@junction-agents/diagnostics": "workspace:*",
+    "@junction-agents/shared": "workspace:*",
+    "@junction-agents/core": "workspace:*",
+    "@junction-agents/rules": "workspace:*",
+    "@junction-agents/tools-ts": "workspace:*",
+    "dotenv": "^16.4.5",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
