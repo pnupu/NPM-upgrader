@@ -1,0 +1,25 @@
+{
+  "name": "@junction-agents/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@junction-agents/diagnostics": "workspace:*",
+    "@junction-agents/rules": "workspace:*",
+    "@junction-agents/shared": "workspace:*",
+    "@junction-agents/tools-ts": "workspace:*",
+    "@langchain/anthropic": "^0.2.12",
+    "@langchain/openai": "^0.3.6",
+    "langchain": "^0.2.18"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "typescript": "^5.6.3"
+  }
+}

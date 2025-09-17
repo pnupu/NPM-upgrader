@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "declaration": true,
+    "lib": ["ES2022"],
+    "types": ["node"]
+  },
+  "references": [
+    { "path": "../shared" },
+    { "path": "../diagnostics" },
+    { "path": "../rules" },
+    { "path": "../tools-ts" }
+  ],
+  "include": ["src"]
+}
+
+
