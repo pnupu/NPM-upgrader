@@ -10,23 +10,23 @@ export interface RunRecord {
 }
 
 export function writeRunRecord(projectRoot: string, rec: RunRecord): string {
-  const dir = path.join(projectRoot, '.upgrade', 'runs');
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${rec.sessionId}.json`);
+  const runDir = path.join(projectRoot, '.upgrade', 'runs', rec.sessionId);
+  fs.mkdirSync(runDir, { recursive: true });
+  const file = path.join(runDir, 'run.json');
   fs.writeFileSync(file, JSON.stringify(rec, null, 2));
   return file;
 }
 
 export function writePlanArtifact(projectRoot: string, sessionId: string, plan: unknown): string {
-  const dir = path.join(projectRoot, '.upgrade', 'runs');
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${sessionId}.plan.json`);
+  const runDir = path.join(projectRoot, '.upgrade', 'runs', sessionId);
+  fs.mkdirSync(runDir, { recursive: true });
+  const file = path.join(runDir, 'plan.json');
   fs.writeFileSync(file, JSON.stringify(plan, null, 2));
   return file;
 }
 
 export function writeChangesArtifact(projectRoot: string, sessionId: string, changes: Array<{ file: string; before: string; after: string }>): string[] {
-  const base = path.join(projectRoot, '.upgrade', 'runs', `${sessionId}.changes`);
+  const base = path.join(projectRoot, '.upgrade', 'runs', sessionId, 'changes');
   fs.mkdirSync(base, { recursive: true });
   const written: string[] = [];
   const manifest: Array<{ file: string; beforePath: string; afterPath: string }> = [];

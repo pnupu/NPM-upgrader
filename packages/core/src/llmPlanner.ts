@@ -35,6 +35,7 @@ Planning constraints:
 - Prefer conservative edits that cannot worsen types or runtime behavior.
 - If you are unsure, return an empty plan ("ops": []).
 - Do not propose free-form diffs; only the exact Ops above are allowed.
+ - When you rename a named import for a JSX component (e.g., Switch→Routes, Redirect→Navigate), you MUST also include a matching RENAME_JSX_TAG op on the same file so the JSX elements are updated to the new name.
 `;
 
 export async function planWithLlm(diags: Diagnostic[], files: string[], cfg: LlmPlannerConfig): Promise<Plan> {

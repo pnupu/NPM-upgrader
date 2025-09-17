@@ -41,7 +41,36 @@ export function computePlanChanges(plan: Plan): { file: string; before: string; 
           break;
         }
         case 'EDIT_IMPORT': {
-          after = editImportRename(after, (op as any).to.module, (op as any).from?.named || '', (op as any).to?.named || '');
+          const fromNamed = (op as any).from?.named || '';
+          const toNamed = (op as any).to?.named || '';
+          const moduleName = (op as any).to?.module || (op as any).from?.module || '';
+          after = editImportRename(after, moduleName, fromNamed, toNamed);
+          // Fallback: if a JSX tag with the old name exists, rename it to match the new imported name
+          if (fromNamed && toNamed && fromNamed !== toNamed) {
+            after = renameJsxTag(after, fromNamed, toNamed);
+          }
+          break;
+        }
+        case 'EDIT_TEXT_SMALL': {
+          const anchor: string = (op as any).anchor;
+          const beforeText: string = (op as any).before;
+          const afterText: string = (op as any).after;
+          const maxChars: number = Math.max(0, Number((op as any).maxChars) || 0);
+          if (beforeText.length === 0 || (maxChars && (beforeText.length > maxChars || afterText.length > maxChars))) {
+            break;
+          }
+          // Find occurrence near anchor if provided
+          let idx = -1;
+          if (anchor && typeof anchor === 'string' && anchor.length) {
+            const anchorIdx = after.indexOf(anchor);
+            if (anchorIdx !== -1) idx = after.indexOf(beforeText, Math.max(0, anchorIdx - 2000));
+          }
+          if (idx === -1) idx = after.indexOf(beforeText);
+          if (idx !== -1) {
+            const pre = after.slice(0, idx);
+            const post = after.slice(idx + beforeText.length);
+            after = pre + afterText + post;
+          }
           break;
         }
         default:

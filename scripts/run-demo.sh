@@ -24,6 +24,8 @@ Usage: $0 <command>
 Commands:
   build-cli             Build the workspace CLI/packages
   prepare               Prepare and cache both v5 and v6 node_modules for router-demo
+  prepare-v6            Prepare only v6 cache
+  rebuild-v6            Delete and rebuild v6 cache from current state
   use v5|v6             Switch router-demo to cached v5 or v6 deps without reinstalling
   diag                  Run diagnose on router-demo
   apply-once            Run one agent cycle (plan/apply/diagnose) on router-demo
@@ -59,25 +61,28 @@ cache_state() {
   [[ -f "$DEMO_DIR/pnpm-lock.yaml" ]] && cp "$DEMO_DIR/pnpm-lock.yaml" "$CACHE_DIR/pnpm-lock-$label.yaml" || true
   [[ -f "$DEMO_DIR/package-lock.json" ]] && cp "$DEMO_DIR/package-lock.json" "$CACHE_DIR/package-lock-$label.json" || true
   rm -rf "$CACHE_DIR/node_modules-$label"
-  mv "$DEMO_DIR/node_modules" "$CACHE_DIR/node_modules-$label"
+  cp -R "$DEMO_DIR/node_modules" "$CACHE_DIR/node_modules-$label"
 }
 
 prepare_v5() {
   echo "Preparing v5 cache..."
-  $CLI deps:reset --project "$DEMO_DIR" --install
-  if [[ ! -d "$DEMO_DIR/node_modules" ]]; then
-    (cd "$DEMO_DIR" && npm install --silent | cat)
-  fi
+  $CLI deps:reset --project "$DEMO_DIR"
+  (cd "$DEMO_DIR" && npm ci --silent | cat)
   cache_state v5
 }
 
 prepare_v6() {
   echo "Preparing v6 cache..."
-  $CLI deps:upgrade --project "$DEMO_DIR" --install
-  if [[ ! -d "$DEMO_DIR/node_modules" ]]; then
-    (cd "$DEMO_DIR" && npm install --silent | cat)
-  fi
+  $CLI deps:upgrade --project "$DEMO_DIR"
+  (cd "$DEMO_DIR" && npm ci --silent | cat)
   cache_state v6
+}
+
+rebuild_v6() {
+  echo "Rebuilding v6 cache..."
+  ensure_cache_dir
+  rm -rf "$CACHE_DIR/package-v6.json" "$CACHE_DIR/pnpm-lock-v6.yaml" "$CACHE_DIR/package-lock-v6.json" "$CACHE_DIR/node_modules-v6"
+  prepare_v6
 }
 
 restore_state() {
@@ -92,7 +97,7 @@ restore_state() {
   cp "$pkg" "$DEMO_DIR/package.json"
   [[ -f "$CACHE_DIR/pnpm-lock-$label.yaml" ]] && cp "$CACHE_DIR/pnpm-lock-$label.yaml" "$DEMO_DIR/pnpm-lock.yaml" || true
   [[ -f "$CACHE_DIR/package-lock-$label.json" ]] && cp "$CACHE_DIR/package-lock-$label.json" "$DEMO_DIR/package-lock.json" || true
-  mv "$nm" "$DEMO_DIR/node_modules"
+  cp -R "$nm" "$DEMO_DIR/node_modules"
   echo "Switched router-demo to $label deps from cache."
 }
 
@@ -145,6 +150,14 @@ case "$cmd" in
     build_cli
     prepare_v5
     prepare_v6
+    ;;
+  prepare-v6)
+    build_cli
+    prepare_v6
+    ;;
+  rebuild-v6)
+    build_cli
+    rebuild_v6
     ;;
   use)
     shift || true

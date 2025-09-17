@@ -259,6 +259,10 @@ program
 		}
 		console.log(`Applied: ${res.applied}. Before: ${res.before.count}${res.after ? ` After: ${res.after.count}` : ''}`);
 		writeRunRecord(projectRoot, { sessionId: String(Date.now()), timestamp: new Date().toISOString(), before: res.before, after: res.after, filesTouched: 0 });
+		if (res.applied && projectRoot.includes('/router-demo')) {
+			// Run eslint --fix quietly to stabilize formatting without emitting extra logs
+			spawnSync('pnpm', ['run', 'lint:fix'], { cwd: projectRoot, stdio: 'ignore' });
+		}
 		if (opts.git && isRepo(projectRoot)) {
 			try {
 				commitAll(projectRoot, 'router-fix: apply agent batch');

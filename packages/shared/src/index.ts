@@ -22,6 +22,7 @@ export type Op =
 	| { kind: 'REMOVE_JSX_PROP'; file: string; tag: string; prop: string }
 	| { kind: 'CONVERT_COMPONENT_PROP_TO_ELEMENT'; file: string; tag: string; fromProp: string; toProp: string }
 	| { kind: 'REWRITE_CALL'; file: string; callee: CalleeSpec; edits: CallEdit[] }
+  | { kind: 'EDIT_TEXT_SMALL'; file: string; anchor: string; before: string; after: string; maxChars: number }
 	| { kind: 'ADD_FILE'; path: string; templateId: string; params?: Record<string, unknown> }
 	| { kind: 'FORMAT_AND_ORGANIZE'; files: string[] };
 
