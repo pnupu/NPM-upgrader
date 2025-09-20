@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 const Login: React.FC = () => {
   const { login } = useAuth();
   const history = useHistory();
-  const location = useLocation<{ from?: { pathname: string } }>();
+  const location = useLocation();
 
   const handleLogin = () => {
     login();
