@@ -11,10 +11,6 @@ export const AppRoutes: React.FC = () => {
     <Switch>
       <Route exact path="/" component={Home} />
       <Route exact path="/new" component={NewPage} />
-      {/* v5 Redirect pattern */}
-      <Redirect from="/old" to="/new" />
-
-      {/* Removed render-prop example for stability */}
 
       <Route exact path="/dashboard" component={Dashboard} />
       <Route exact path="/login" component={Login} />
