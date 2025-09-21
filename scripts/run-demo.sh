@@ -26,6 +26,7 @@ Commands:
   prepare               Prepare and cache both v5 and v6 node_modules for router-demo
   prepare-v6            Prepare only v6 cache
   rebuild-v6            Delete and rebuild v6 cache from current state
+  rebuild-v5            Delete and rebuild v5 cache from current state
   use v5|v6             Switch router-demo to cached v5 or v6 deps without reinstalling
   diag                  Run diagnose on router-demo
   apply-once            Run one agent cycle (plan/apply/diagnose) on router-demo
@@ -71,6 +72,13 @@ prepare_v5() {
   cache_state v5
 }
 
+rebuild_v5() {
+  echo "Rebuilding v5 cache..."
+  ensure_cache_dir
+  rm -rf "$CACHE_DIR/package-v5.json" "$CACHE_DIR/pnpm-lock-v5.yaml" "$CACHE_DIR/package-lock-v5.json" "$CACHE_DIR/node_modules-v5"
+  prepare_v5
+}
+
 prepare_v6() {
   echo "Preparing v6 cache..."
   $CLI deps:upgrade --project "$DEMO_DIR"
@@ -114,6 +122,25 @@ run_loop() {
 }
 
 run_loop_debug() {
+  # Preserve existing .upgrade logs before reset
+  SAVED_UPGRADE=""
+  if [[ -d "$DEMO_DIR/.upgrade" ]]; then
+    SAVED_UPGRADE="$(mktemp -d)"
+    cp -R "$DEMO_DIR/.upgrade" "$SAVED_UPGRADE/.upgrade"
+  fi
+
+  reset_code
+
+  # Restore .upgrade logs after reset
+  if [[ -n "$SAVED_UPGRADE" && -d "$SAVED_UPGRADE/.upgrade" ]]; then
+    mkdir -p "$DEMO_DIR"
+    cp -R "$SAVED_UPGRADE/.upgrade" "$DEMO_DIR/.upgrade"
+    rm -rf "$SAVED_UPGRADE"
+  fi
+
+  # Ensure dependencies for tsc are installed
+  (cd "$DEMO_DIR" && npm ci --silent | cat)
+
   $CLI run --project "$DEMO_DIR" --debug
 }
 
@@ -129,8 +156,6 @@ reset_code() {
   # Restore tracked files
   git -C "$ROOT_DIR" restore --worktree --staged -- router-demo || true
 
-  # Remove untracked build artifacts but keep preserved configs
-  rm -rf "$DEMO_DIR/node_modules" "$DEMO_DIR/dist" "$DEMO_DIR/.upgrade" "$DEMO_DIR/.cache" "$DEMO_DIR/tsconfig.tsbuildinfo"
 
   # Restore preserved configs
   for f in package.json eslint.config.js .eslintrc.cjs; do
@@ -139,6 +164,14 @@ reset_code() {
     fi
   done
   rm -rf "$TMP_DIR"
+}
+
+# Discard all changes in router-demo/src using git (tracked and untracked)
+reset_src_only() {
+  # Restore tracked files in src (unstage + overwrite worktree)
+  git -C "$ROOT_DIR" restore --worktree --staged -- router-demo/src || true
+  # Remove untracked files/dirs under src
+  git -C "$ROOT_DIR" clean -fd -- router-demo/src || true
 }
 
 cmd="${1:-}"
@@ -158,6 +191,10 @@ case "$cmd" in
   rebuild-v6)
     build_cli
     rebuild_v6
+    ;;
+  rebuild-v5)
+    build_cli
+    rebuild_v5
     ;;
   use)
     shift || true
@@ -181,6 +218,9 @@ case "$cmd" in
     ;;
   reset-code)
     reset_code
+    ;;
+  reset-src)
+    reset_src_only
     ;;
   run-fresh)
     reset_code

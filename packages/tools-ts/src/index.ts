@@ -177,3 +177,98 @@ export function convertJsxPropComponentToElement(content: string, tagName: strin
 	result.dispose();
 	return printer.printFile(updated);
 }
+
+// Minimal call rewriter to support planner REWRITE_CALL op
+export type RewriteEdit = { op: 'RENAME' | 'INSERT_ARG' | 'DROP_ARG' | 'WRAP_ARG'; index?: number; value?: unknown };
+
+export function rewriteCall(content: string, calleeName: string, edits: RewriteEdit[]): string {
+    const source = ts.createSourceFile('f.tsx', content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+    const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
+        const visit: ts.Visitor = (node) => {
+            if (ts.isCallExpression(node)) {
+                let matches = false;
+                let renameCalleeTo: string | null = null;
+                if (ts.isIdentifier(node.expression)) {
+                    matches = node.expression.text === calleeName;
+                } else if (ts.isPropertyAccessExpression(node.expression)) {
+                    matches = node.expression.name.text === calleeName;
+                }
+                if (matches) {
+                    let newExpr = node.expression;
+                    let args = node.arguments.slice();
+                    for (const e of edits) {
+                        switch (e.op) {
+                            case 'RENAME': {
+                                if (typeof e.value === 'string' && e.value.trim().length) {
+                                    if (ts.isIdentifier(newExpr)) {
+                                        newExpr = ts.factory.createIdentifier(e.value);
+                                    } else if (ts.isPropertyAccessExpression(newExpr)) {
+                                        newExpr = ts.factory.updatePropertyAccessExpression(newExpr, newExpr.expression, ts.factory.createIdentifier(e.value));
+                                    }
+                                }
+                                break;
+                            }
+                            case 'INSERT_ARG': {
+                                const idx = Math.max(0, Math.min(args.length, e.index ?? args.length));
+                                args = args.slice(0, idx).concat([literalFromValue(e.value)]).concat(args.slice(idx));
+                                break;
+                            }
+                            case 'DROP_ARG': {
+                                const idx = e.index ?? -1;
+                                if (idx >= 0 && idx < args.length) {
+                                    args = args.slice(0, idx).concat(args.slice(idx + 1));
+                                }
+                                break;
+                            }
+                            case 'WRAP_ARG': {
+                                const idx = e.index ?? -1;
+                                if (idx >= 0 && idx < args.length && typeof e.value === 'string' && e.value.trim().length) {
+                                    args = args.slice();
+                                    args[idx] = ts.factory.createCallExpression(ts.factory.createIdentifier(String(e.value)), undefined, [args[idx]]);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    return ts.factory.updateCallExpression(node, newExpr, node.typeArguments, args);
+                }
+            }
+            return ts.visitEachChild(node, visit, context);
+        };
+        return (sf) => ts.visitEachChild(sf, visit, context) as ts.SourceFile;
+    };
+    const result = ts.transform(source, [transformer]);
+    const updated = result.transformed[0] as ts.SourceFile;
+    result.dispose();
+    return printer.printFile(updated);
+}
+
+function literalFromValue(value: unknown): ts.Expression {
+    if (value === null) return ts.factory.createNull();
+    const t = typeof value;
+    if (t === 'string') return ts.factory.createStringLiteral(String(value));
+    if (t === 'number') return ts.factory.createNumericLiteral(String(value));
+    if (t === 'boolean') return value ? ts.factory.createTrue() : ts.factory.createFalse();
+    if (Array.isArray(value)) {
+        return ts.factory.createArrayLiteralExpression(value.map(literalFromValue), false);
+    }
+    if (t === 'object') {
+        const props: ts.PropertyAssignment[] = [];
+        for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+            const isValidId = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k);
+            const name = isValidId ? ts.factory.createIdentifier(k) : ts.factory.createStringLiteral(k);
+            props.push(ts.factory.createPropertyAssignment(name as any, literalFromValue(v)));
+        }
+        return ts.factory.createObjectLiteralExpression(props, false);
+    }
+    // fallback to undefined identifier if unsupported
+    return ts.factory.createIdentifier('undefined');
+}
+
+// Very lightweight formatter/organizer: re-print the file via TS printer
+export function formatAndOrganize(content: string): string {
+    const source = ts.createSourceFile('f.tsx', content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+    return printer.printFile(source);
+}

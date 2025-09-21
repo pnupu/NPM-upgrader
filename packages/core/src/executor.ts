@@ -5,7 +5,9 @@ import {
   renameJsxTag,
   removeJsxProp,
   convertJsxPropComponentToElement,
-  editImportRename
+  editImportRename,
+  rewriteCall,
+  formatAndOrganize
 } from '@junction-agents/tools-ts';
 
 export function computePlanChanges(plan: Plan): { file: string; before: string; after: string }[] {
@@ -70,6 +72,22 @@ export function computePlanChanges(plan: Plan): { file: string; before: string; 
             const pre = after.slice(0, idx);
             const post = after.slice(idx + beforeText.length);
             after = pre + afterText + post;
+          }
+          break;
+        }
+        case 'REWRITE_CALL': {
+          const callee = (op as any).callee?.name as string;
+          const edits = (op as any).edits as Array<{ op: 'RENAME' | 'INSERT_ARG' | 'DROP_ARG' | 'WRAP_ARG'; index?: number; value?: unknown }>;
+          if (callee && Array.isArray(edits) && edits.length) {
+            after = rewriteCall(after, callee, edits);
+          }
+          break;
+        }
+        case 'FORMAT_AND_ORGANIZE': {
+          // opportunistically format only if this file is in the list
+          const files = (op as any).files as string[] | undefined;
+          if (!files || files.includes(file)) {
+            after = formatAndOrganize(after);
           }
           break;
         }

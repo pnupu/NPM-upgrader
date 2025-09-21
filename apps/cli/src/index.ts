@@ -8,7 +8,7 @@ import { runTsc } from '@junction-agents/diagnostics';
 import { isRepo, ensureClean, checkoutNewBranch, currentBranch, commitAll, tag, checkoutBranch } from './git.js';
 import { editImportRename, removeJsxPropExact, convertRouteComponentToElement, applyChanges, type FileChange, renameJsxTag } from '@junction-agents/tools-ts';
 import { RuleRegistry, simpleRule } from '@junction-agents/rules';
-import { agentPlan, agentRunOnce, agentPlanLlm, agentRunOnceLlm } from '@junction-agents/core';
+import { agentPlan, agentRunOnce, agentPlanLlm, agentRunOnceLlm, runFocused } from '@junction-agents/core';
 import { applyPlan, writeRunRecord } from '@junction-agents/core';
 import { planWithLlm } from '@junction-agents/core';
 
@@ -212,30 +212,11 @@ program
 	.option('--model <name>', 'Model name', 'gpt-4o-mini')
 	.option('--max-steps <n>', 'Maximum cycles', '5')
 	.option('--debug', 'Write plan/changes artifacts under .upgrade/runs', false)
-	.action(async (opts) => {
-		const projectRoot = path.resolve(opts.project);
-		const maxSteps = Math.max(1, parseInt(String(opts.maxSteps), 10) || 1);
-		let steps = 0;
-		let lastCount = Number.POSITIVE_INFINITY;
-		while (steps < maxSteps) {
-			steps++;
-			let res;
-			const sessionId = opts.debug ? `${Date.now()}-${steps}` : undefined;
-			if (opts.planner === 'rules') {
-				const registry = new RuleRegistry();
-				registry.register(simpleRule);
-				res = agentRunOnce({ projectRoot }, registry, (plan) => applyPlan(plan), sessionId);
-			} else {
-				res = await agentRunOnceLlm({ projectRoot }, { provider: opts.provider, model: opts.model }, (plan) => applyPlan(plan), sessionId);
-			}
-			console.log(`Step ${steps}: Applied=${res.applied} Before=${res.before.count}${res.after ? ` After=${res.after.count}` : ''}`);
-			writeRunRecord(projectRoot, { sessionId: String(Date.now()), timestamp: new Date().toISOString(), before: res.before, after: res.after, filesTouched: 0 });
-			if (!res.after || res.after.count >= res.before.count) break;
-			if (res.after.count === lastCount) break; // idempotency/stability guard
-			lastCount = res.after.count;
-		}
-		console.log('Run loop complete.');
-	});
+  .action(async (opts) => {
+    const projectRoot = path.resolve(opts.project);
+    await runFocused({ projectRoot, maxSteps: parseInt(String(opts.maxSteps), 10) || 5, planner: { provider: opts.provider, model: opts.model }, debug: !!opts.debug });
+    console.log('Run loop complete.');
+  });
 
 program
 	.command('apply')
