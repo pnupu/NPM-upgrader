@@ -1,4 +1,4 @@
-## Junction Agents – Focused Error Loop
+## npm-upgrader
 
 This repo contains a small, general migration assistant that makes safe, incremental changes to a codebase by fixing one target at a time. The `router-demo` app is used as a testbed (React Router v5 → v6), but the loop and tooling are generic.
 
